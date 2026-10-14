@@ -1,0 +1,10 @@
+# Lock line endings so shell scripts / Dockerfile / Python stay LF everywhere,
+# including the Linux Docker image and the Vast.ai instance.
+*.sh        text eol=lf
+Dockerfile  text eol=lf
+*.py        text eol=lf
+*.yaml      text eol=lf
+*.yml       text eol=lf
+*.md        text eol=lf
+# PowerShell runs on Windows only.
+*.ps1       text eol=crlf

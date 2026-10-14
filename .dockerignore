@@ -1,0 +1,16 @@
+# Keep the image lean: these are re-downloaded / regenerated on the instance anyway.
+.git
+.gitignore
+models/
+data/
+retrieval/
+verl_checkpoints/
+verl_log/
+sft_checkpoint/
+*.parquet
+*.index
+*.jsonl
+*.jsonl.gz
+__pycache__/
+*.pyc
+.pytest_cache/

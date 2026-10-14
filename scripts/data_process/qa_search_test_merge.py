@@ -45,6 +45,9 @@ if __name__ == '__main__':
     parser.add_argument('--hdfs_dir', default=None)
     parser.add_argument('--template_type', type=str, default='base')
     parser.add_argument('--data_sources', default='nq')
+    # FlashRAG dataset source: a HuggingFace repo id (default) or a local directory.
+    parser.add_argument('--data_dir', default='RUC-NLPIR/FlashRAG_datasets',
+                        help='HuggingFace repo id or local directory containing the FlashRAG datasets.')
 
     args = parser.parse_args()
 
@@ -54,7 +57,7 @@ if __name__ == '__main__':
     for data_source in data_sources:
 
         if data_source != 'strategyqa':
-            dataset = datasets.load_dataset('/mnt/workspace/common/datas/FlashRAG_Dataset', data_source)
+            dataset = datasets.load_dataset(args.data_dir, data_source)
         else:
             dataset = datasets.load_dataset('json', data_files="/home/peterjin/mnt/data/strategyqa/test_correct.jsonl")
 

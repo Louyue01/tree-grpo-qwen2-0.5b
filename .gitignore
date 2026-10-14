@@ -1,0 +1,17 @@
+# Large downloaded / generated artifacts — re-download or regenerate on the instance.
+models/
+data/
+retrieval/
+verl_checkpoints/
+verl_log/
+sft_checkpoint/
+*.parquet
+*.index
+*.jsonl
+*.jsonl.gz
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
