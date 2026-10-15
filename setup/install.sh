@@ -100,6 +100,10 @@ else
     pip install vllm==${VLLM_VERSION}
     # transformers is pinned by verl's monkey-patch to 4.45-4.47.1.
     pip install "transformers==${TRANSFORMERS_VERSION}" peft pandas
+    # Keep datasets/huggingface_hub on the 2.x/0.x line that transformers 4.47 requires.
+    # Otherwise the later `pip install -e .` pulls latest datasets -> huggingface_hub>=2.0
+    # and silently breaks transformers' `<1.0` pin (plus renames the `huggingface-cli`).
+    pip install "datasets<3.0" "huggingface_hub>=0.24,<1.0"
     pip install flash-attn --no-build-isolation
     conda deactivate
     touch "$MARK_DIR/treegrpo.done"
