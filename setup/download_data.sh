@@ -22,19 +22,36 @@ TEACHER="${TEACHER:-Qwen/Qwen2.5-7B-Instruct}"
 
 mkdir -p "$MODEL_DIR" "$DATA_DIR" "$INDEX_DIR"
 
+# Download an HF repo to a local dir, working across huggingface_hub CLI versions:
+# `huggingface-cli` (old) / `hf` (new) / plain python snapshot_download (always works).
+hf_download() {
+    local repo="$1" dir="$2"
+    if command -v huggingface-cli >/dev/null 2>&1; then
+        huggingface-cli download "$repo" --local-dir "$dir"
+    elif command -v hf >/dev/null 2>&1; then
+        hf download "$repo" --local-dir "$dir"
+    else
+        python - "$repo" "$dir" <<'PY'
+import sys
+from huggingface_hub import snapshot_download
+snapshot_download(sys.argv[1], local_dir=sys.argv[2])
+PY
+    fi
+}
+
 echo "==> [1/4] Downloading base model: $BASE_MODEL"
 if [ ! -d "$MODEL_DIR/$(basename "$BASE_MODEL")" ]; then
-    huggingface-cli download "$BASE_MODEL" --local-dir "$MODEL_DIR/$(basename "$BASE_MODEL")"
+    hf_download "$BASE_MODEL" "$MODEL_DIR/$(basename "$BASE_MODEL")"
 fi
 
 echo "==> [2/4] Downloading teacher model for SFT demos: $TEACHER"
 if [ ! -d "$MODEL_DIR/$(basename "$TEACHER")" ]; then
-    huggingface-cli download "$TEACHER" --local-dir "$MODEL_DIR/$(basename "$TEACHER")"
+    hf_download "$TEACHER" "$MODEL_DIR/$(basename "$TEACHER")"
 fi
 
 echo "==> [3/4] Downloading e5-base-v2 retriever encoder"
 if [ ! -d "$MODEL_DIR/e5-base-v2" ]; then
-    huggingface-cli download intfloat/e5-base-v2 --local-dir "$MODEL_DIR/e5-base-v2"
+    hf_download intfloat/e5-base-v2 "$MODEL_DIR/e5-base-v2"
 fi
 
 echo "==> [4/4] Downloading wiki-18 FAISS index + corpus"
