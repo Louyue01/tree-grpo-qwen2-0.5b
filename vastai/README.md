@@ -38,7 +38,7 @@ bash setup/install.sh        # 装 miniforge + treegrpo/retriever 两个 conda �
 > - 脚本有完成标记（`~/.cache/treegrpo-install/`），中途失败重跑会跳过已装好的环境；
 >   想彻底重装用 `FORCE=1 bash setup/install.sh`。
 > - 依赖版本都写死在脚本里，和镜像方案一致：treegrpo = py3.12.9 / torch 2.6.0 / vllm 0.8.5.post1 /
->   transformers 4.47.1 / flash-attn；retriever = py3.10.13 / torch 2.6.0 / faiss-gpu-cu12 1.7.3 / uvicorn / fastapi。
+>   transformers 4.53.2 / flash-attn；retriever = py3.10.13 / torch 2.6.0 / faiss-gpu-cu12 1.7.3 / uvicorn / fastapi。
 
 ## 3. 跑通完整流程
 

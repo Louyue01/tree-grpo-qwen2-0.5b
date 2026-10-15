@@ -57,8 +57,9 @@ RUN conda create -y -n treegrpo python=3.12.9 && \
     pip install --upgrade pip && \
     pip install torch==2.6.0 torchvision==0.21.0 torchaudio==2.6.0 && \
     pip install vllm==0.8.5.post1 && \
-    # transformers is pinned by verl's monkey-patch to 4.45-4.47.1.
-    pip install "transformers==4.47.1" peft pandas && \
+    # transformers >=4.51.1 matches vllm 0.8.5; verl's monkey-patch pin (4.45-4.47.1) is ulysses-SP-only.
+    pip install "transformers==4.53.2" peft pandas && \
+    pip install "datasets<3.0" "huggingface_hub>=0.24,<1.0" && \
     pip install flash-attn --no-build-isolation
 
 # ---- bake in the (possibly locally modified) repo ----

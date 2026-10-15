@@ -16,7 +16,7 @@
 #   PIP_INDEX_URL        PyPI mirror; unset => official PyPI (pip reads it natively)
 #   TORCH_VERSION        default 2.6.0
 #   VLLM_VERSION         default 0.8.5.post1
-#   TRANSFORMERS_VERSION default 4.47.1
+#   TRANSFORMERS_VERSION default 4.53.2
 #   FORCE=1              (re)create the envs even if a completion marker exists
 
 set -euo pipefail
@@ -26,7 +26,7 @@ WORK_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 TORCH_VERSION="${TORCH_VERSION:-2.6.0}"
 VLLM_VERSION="${VLLM_VERSION:-0.8.5.post1}"
-TRANSFORMERS_VERSION="${TRANSFORMERS_VERSION:-4.47.1}"
+TRANSFORMERS_VERSION="${TRANSFORMERS_VERSION:-4.53.2}"
 
 if [ "$(id -u)" = "0" ]; then
     MINIFORGE_DIR="${MINIFORGE_DIR:-/opt/miniforge3}"
@@ -98,9 +98,10 @@ else
     pip install --upgrade pip
     pip install torch==${TORCH_VERSION} torchvision==0.21.0 torchaudio==${TORCH_VERSION}
     pip install vllm==${VLLM_VERSION}
-    # transformers is pinned by verl's monkey-patch to 4.45-4.47.1.
+    # transformers >=4.51.1 matches vllm 0.8.5. verl's monkey-patch asserts 4.45-4.47.1, but
+    # that patch only runs under ulysses sequence parallelism (multi-GPU); single-GPU skips it.
     pip install "transformers==${TRANSFORMERS_VERSION}" peft pandas
-    # Keep datasets/huggingface_hub on the 2.x/0.x line that transformers 4.47 requires.
+    # Keep datasets/huggingface_hub on the 2.x/0.x line (huggingface_hub <1.0) that transformers requires.
     # Otherwise the later `pip install -e .` pulls latest datasets -> huggingface_hub>=2.0
     # and silently breaks transformers' `<1.0` pin (plus renames the `huggingface-cli`).
     pip install "datasets<3.0" "huggingface_hub>=0.24,<1.0"
