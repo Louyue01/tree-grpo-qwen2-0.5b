@@ -15,9 +15,12 @@ SSH 进去 `git clone` 代码后跑 `bash setup/install.sh` 装好全部依赖�
   flash-attn。推荐直接用官方 `nvidia/cuda:12.4.1-cudnn-devel-ubuntu22.04`（Vast.ai 选机时在
   "Edit image & config" 里把镜像填成这个地址即可；或选一个带 nvcc 的 CUDA 12.x 模板）。
 - **GPU**：1× RTX 4090（24GB）即可；A10G / L4 / L40S 更宽裕。0.5B 全参 + vLLM rollout + FSDP offload
-  + 检索服务器，24GB 足够。
-- **磁盘**：**≥ 100GB**（wiki-18 索引 + 语料约 10–20GB，Qwen2.5-0.5B + 教师模型 7B-Instruct + e5 约 15GB，
-  两个 conda 环境的 torch/vllm/flash-attn 再约 10GB，checkpoint 与数据集留余量）。租用时把磁盘调大，或挂一块 volume。
+  24GB 足够（检索走 CPU，不占显存）。
+- **内存**：**≥ 96GB（建议 128GB）**。wiki-18 的 FAISS 索引约 60GB 会被检索服务器整块读进内存
+  （`faiss.read_index`，CPU 检索），再加训练进程约 20GB，内存不足会 OOM。选机时务必看 RAM 参数。
+- **磁盘**：**≥ 200GB**。wiki-18 索引 60GB（part_aa 40G + part_ab 20G，合并时瞬时再 +60G）+
+  语料 gz 5G / 解压后约 18G + 模型 18G（含 7B 教师）+ 两个 conda 环境约 17G + checkpoint，
+  峰值约 160–180G。**100G 装不下**。
 - **按需 vs 可中断**：训练建议选 **On-demand**（可中断实例便宜但可能被回收；可中断适合冒烟测试）。
 - 需要**外网**以下载模型/数据（Vast.ai 实例默认有外网）。
 
