@@ -32,15 +32,17 @@ export WG_BACKEND="${WG_BACKEND:-ray}"
 # override to XFORMERS only if you also install xformers.
 export VLLM_ATTENTION_BACKEND="${VLLM_ATTENTION_BACKEND:-FLASH_ATTN}"
 export RAY_gsc_rpc_server_reconnect_timeout_s=100
-# Reclaim CUDA allocator fragmentation. The actor backward pass OOM'd with ~2.9 GiB
-# reserved-but-unallocated; expandable segments makes that memory usable again.
-export PYTORCH_CUDA_ALLOC_CONF="${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:True}"
+# NOTE: do NOT set PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True here — vLLM 0.8.5's
+# CuMemAllocator asserts it away at init. The backward OOM is handled by the
+# micro batch size = 1 below instead.
 
 # ---- single-GPU batch sizes (tunable; scaled down from the original 8-GPU values) ----
 n_gpus_per_node=1
 train_batch_size=16          # prompts per training step
 val_batch_size=8
 actor_ppo_mini_batch_size=8
+# micro batch = 1 (was 2): the tree-search rollout yields 16*2*3=96 sequences and the
+# 24GB card OOM'd in loss.backward(); the smaller micro batch halves the peak.
 actor_ppo_micro_batch_size=1
 log_prob_micro_batch_size=1
 
