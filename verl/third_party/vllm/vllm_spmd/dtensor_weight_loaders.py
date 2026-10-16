@@ -310,6 +310,11 @@ def gpt2_dtensor_weight_loader(actor_weights: Dict, vllm_model: nn.Module) -> nn
 
 
 def redistribute_dtensor(param_name: str, loaded_weights: DTensor, parallelize_plan: Dict = None):
+    # On a single GPU, FSDP state_dict() returns plain (full) tensors rather than
+    # DTensor, since there is nothing to shard across ranks. They are already the
+    # full local weights, so return them unchanged.
+    if not isinstance(loaded_weights, DTensor):
+        return loaded_weights
     param_name = _process_parameter_names(name=param_name)
     if parallelize_plan is not None:
         assert (
