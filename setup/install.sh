@@ -105,7 +105,9 @@ else
     # Otherwise the later `pip install -e .` pulls latest datasets -> huggingface_hub>=2.0
     # and silently breaks transformers' `<1.0` pin (plus renames the `huggingface-cli`).
     pip install "datasets<3.0" "huggingface_hub>=0.24,<1.0"
-    pip install flash-attn --no-build-isolation
+    # flash-attn is ABI-coupled to torch: the latest (unpinned) no longer supports torch 2.6.0's
+    # cxx11 ABI and loads with `undefined symbol: c10::Error`. Pin 2.7.4.post1 (torch 2.6.0 / vllm 0.8.5).
+    pip install flash-attn==2.7.4.post1 --no-build-isolation
     conda deactivate
     touch "$MARK_DIR/treegrpo.done"
 fi
@@ -114,7 +116,13 @@ fi
 echo "==> [5/6] pip install -e . (treegrpo env)"
 conda activate treegrpo
 cd "$WORK_DIR"
-pip install -e .
+# verl's pyproject.toml declares accelerate/tensordict/ray/datasets UNPINNED. A plain
+# `pip install -e .` re-resolves them against latest and silently upgrades torch 2.6.0
+# (tensordict is ABI-coupled to torch) and datasets/huggingface_hub, breaking vllm/transformers.
+# So: install the remaining deps explicitly with the torch-2.6.0-paired tensordict, then
+# install verl itself with --no-deps so nothing re-clobbers the pins above.
+pip install "tensordict==0.7.0" accelerate codetiming dill hydra-core pybind11 ray
+pip install -e . --no-deps
 conda deactivate
 
 # ---- conda init ----

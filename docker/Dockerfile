@@ -60,14 +60,15 @@ RUN conda create -y -n treegrpo python=3.12.9 && \
     # transformers >=4.51.1 matches vllm 0.8.5; verl's monkey-patch pin (4.45-4.47.1) is ulysses-SP-only.
     pip install "transformers==4.53.2" peft pandas && \
     pip install "datasets<3.0" "huggingface_hub>=0.24,<1.0" && \
-    pip install flash-attn --no-build-isolation
+    pip install flash-attn==2.7.4.post1 --no-build-isolation
 
 # ---- bake in the (possibly locally modified) repo ----
 WORKDIR /workspace/Tree-GRPO
 COPY . /workspace/Tree-GRPO
 
 RUN source "$MINIFORGE/etc/profile.d/conda.sh" && conda activate treegrpo && \
-    pip install -e .
+    pip install "tensordict==0.7.0" accelerate codetiming dill hydra-core pybind11 ray && \
+    pip install -e . --no-deps
 
 # Convenience: `conda activate <env>` works in interactive shells.
 RUN conda init bash
