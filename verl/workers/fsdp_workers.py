@@ -406,7 +406,11 @@ class ActorRolloutRefWorker(Worker):
                 raise NotImplementedError("vllm_mode must be 'customized' or 'spmd'")
             log_gpu_memory_usage('After building vllm rollout', logger=None)
             if torch.distributed.get_world_size() == 1:
-                self.config.rollout.load_format = 'dummy_hf'
+                # vLLM >= 0.7 (SPMD) only implements the DTensor weight loader in
+                # FSDPVLLMShardingManager.__enter__; the 'hf' load_format raises
+                # NotImplementedError there. Keep dummy_dtensor so single-GPU FSDP
+                # uses the same dtensor sync path as the multi-GPU setup.
+                self.config.rollout.load_format = 'dummy_dtensor'
             rollout_sharding_manager = FSDPVLLMShardingManager(module=self.actor_module_fsdp,
                                                                inference_engine=rollout.inference_engine,
                                                                model_config=self.actor_model_config,
