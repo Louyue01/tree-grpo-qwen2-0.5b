@@ -7,7 +7,7 @@
 #   MODEL_DIR   where HF models are saved (default $WORK_DIR/models)
 #   DATA_DIR    where train/test/sft parquet are written (default $WORK_DIR/data)
 #   INDEX_DIR   where the wiki-18 FAISS index + corpus live (default $WORK_DIR/retrieval)
-#   BASE_MODEL  base model HF id (default Qwen/Qwen2.5-0.5B)
+#   BASE_MODEL  base model HF id (default Qwen/Qwen2.5-0.5B-Instruct)
 #   TEACHER     teacher model HF id for SFT demo generation (default Qwen/Qwen2.5-7B-Instruct)
 
 set -euo pipefail
@@ -17,7 +17,7 @@ WORK_DIR="${WORK_DIR:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 MODEL_DIR="${MODEL_DIR:-$WORK_DIR/models}"
 DATA_DIR="${DATA_DIR:-$WORK_DIR/data}"
 INDEX_DIR="${INDEX_DIR:-$WORK_DIR/retrieval}"
-BASE_MODEL="${BASE_MODEL:-Qwen/Qwen2.5-0.5B}"
+BASE_MODEL="${BASE_MODEL:-Qwen/Qwen2.5-0.5B-Instruct}"
 TEACHER="${TEACHER:-Qwen/Qwen2.5-7B-Instruct}"
 
 mkdir -p "$MODEL_DIR" "$DATA_DIR" "$INDEX_DIR"
@@ -48,6 +48,16 @@ echo "==> [2/4] Downloading teacher model for SFT demos: $TEACHER"
 if [ ! -d "$MODEL_DIR/$(basename "$TEACHER")" ]; then
     hf_download "$TEACHER" "$MODEL_DIR/$(basename "$TEACHER")"
 fi
+
+# Align the base tokenizer's ChatML chat_template with the teacher's. Base Qwen2.5 models
+# ship WITHOUT a chat_template (and rl_dataset.py only ChatML-wraps the prompt when
+# tokenizer.chat_template is set), while the multi-hop reward (qa_em_format.is_valid_sequence)
+# requires the resulting <|im_start|>assistant marker. Instruct already has the template, but
+# copying the teacher's guarantees the SFT demos and RL use the exact same wrapper either way.
+echo "==> Copying ChatML chat_template from teacher to base model"
+python "$WORK_DIR/scripts/add_chat_template.py" \
+    --base "$MODEL_DIR/$(basename "$BASE_MODEL")" \
+    --teacher "$MODEL_DIR/$(basename "$TEACHER")"
 
 echo "==> [3/4] Downloading e5-base-v2 retriever encoder"
 if [ ! -d "$MODEL_DIR/e5-base-v2" ]; then

@@ -1,12 +1,12 @@
 #!/bin/bash
-# SFT format-warmup: teach Qwen2.5-0.5B-Base the ReAct `<think>/<search>/<answer>` format
+# SFT format-warmup: teach Qwen2.5-0.5B-Instruct the ReAct `<think>/<search>/<answer>` format
 # before GRPO / Tree-GRPO. Runs the repo's single-file FSDP SFT trainer.
 #
 # Requires scripts/make_sft_data.py to have produced $DATA_DIR/sft.parquet first.
 #
 # Env vars (with defaults):
 #   CUDA_VISIBLE_DEVICES  (default 0)
-#   BASE_MODEL            base model to warm up (default ./models/Qwen2.5-0.5B)
+#   BASE_MODEL            base model to warm up (default ./models/Qwen2.5-0.5B-Instruct)
 #   DATA_DIR              dir holding sft.parquet (default ./data)
 #   OUTPUT_DIR            HF checkpoint output dir (default ./sft_checkpoint)
 #   TOTAL_EPOCHS          (default 3)
@@ -16,7 +16,7 @@ set -euo pipefail
 BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 export CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0}"
-export BASE_MODEL="${BASE_MODEL:-$BASE_DIR/models/Qwen2.5-0.5B}"
+export BASE_MODEL="${BASE_MODEL:-$BASE_DIR/models/Qwen2.5-0.5B-Instruct}"
 export DATA_DIR="${DATA_DIR:-$BASE_DIR/data}"
 export OUTPUT_DIR="${OUTPUT_DIR:-$BASE_DIR/sft_checkpoint}"
 total_epochs="${TOTAL_EPOCHS:-3}"

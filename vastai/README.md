@@ -1,4 +1,4 @@
-# 在 Vast.ai 上启动 Tree-GRPO 训练（Multi-hop QA · Qwen2.5-0.5B）
+# 在 Vast.ai 上启动 Tree-GRPO 训练（Multi-hop QA · Qwen2.5-0.5B-Instruct）
 
 本目录是「官方 CUDA 镜像 + 一条安装脚本」方案：租一个带 CUDA 12.4 **devel** 工具链的裸机镜像，
 SSH 进去 `git clone` 代码后跑 `bash setup/install.sh` 装好全部依赖（两个 conda 环境），再按顺序跑
@@ -41,7 +41,7 @@ bash setup/install.sh        # 装 miniforge + treegrpo/retriever 两个 conda �
 > - 脚本有完成标记（`~/.cache/treegrpo-install/`），中途失败重跑会跳过已装好的环境；
 >   想彻底重装用 `FORCE=1 bash setup/install.sh`。
 > - 依赖版本都写死在脚本里，和镜像方案一致：treegrpo = py3.12.9 / torch 2.6.0 / vllm 0.8.5.post1 /
->   transformers 4.53.2 / flash-attn；retriever = py3.10.13 / torch 2.6.0 / faiss-gpu-cu12 1.10.0 / uvicorn / fastapi。
+>   transformers 4.53.2 / tensordict 0.7.0 / flash-attn；retriever = py3.10.13 / torch 2.6.0 / faiss-gpu-cu12 1.10.0 / uvicorn / fastapi。
 
 ## 3. 跑通完整流程
 
@@ -53,7 +53,7 @@ bash setup/download_data.sh
 ```
 
 产出：
-- `models/Qwen2.5-0.5B`、`models/Qwen2.5-7B-Instruct`（教师）、`models/e5-base-v2`
+- `models/Qwen2.5-0.5B-Instruct`、`models/Qwen2.5-7B-Instruct`（教师）、`models/e5-base-v2`
 - `retrieval/e5_Flat.index`、`retrieval/wiki-18.jsonl`
 - `data/train.parquet`、`data/test.parquet`
 
@@ -122,7 +122,7 @@ TOTAL_TRAINING_STEPS=2 bash run_tree.sh
 | 变量 | 默认 | 作用 |
 |------|------|------|
 | `CUDA_VISIBLE_DEVICES` | `0` | 单卡默认用 0 号卡 |
-| `BASE_MODEL` | `models/Qwen2.5-0.5B` | 训练起点（SFT 后改成 `sft_checkpoint/global_step_<N>`） |
+| `BASE_MODEL` | `models/Qwen2.5-0.5B-Instruct` | 训练起点（SFT 后改成 `sft_checkpoint/global_step_<N>`） |
 | `DATA_DIR` | `data` | `train.parquet`/`test.parquet` 所在目录 |
 | `RETRIEVER_URL` | `http://127.0.0.1:8000/retrieve` | 检索服务地址 |
 | `EXPERIMENT_NAME` | 见脚本 | checkpoint / 日志名 |
@@ -138,6 +138,11 @@ TOTAL_TRAINING_STEPS=2 bash run_tree.sh
 - **注意力后端**：原脚本 `VLLM_ATTENTION_BACKEND=XFORMERS`，但安装流程并不装 xformers，
   已改为默认 `FLASH_ATTN`（flash-attn 是实际安装的依赖）。如需 xformers，自行 `pip install xformers` 并
   用 `VLLM_ATTENTION_BACKEND=XFORMERS` 覆盖。
+- **Qwen2.5 base 没有 chat_template（会导致奖励格式判 0）**：多跳 QA 的奖励函数
+  `qa_em_format.is_valid_sequence` 要求解码出的 `prompt+response` 里含 `<|im_start|>assistant` 标记；
+  而 `rl_dataset.py` 只有在 `tokenizer.chat_template` 存在时才会把 prompt 包成 ChatML。**本项目默认用
+  Instruct（自带 ChatML 模板），此坑自动规避**；仅在切回 base 模型时才需要 `download_data.sh` 里的
+  `scripts/add_chat_template.py` 把教师的 ChatML 模板拷到 base（否则格式奖励恒为 0）。
 - **swanlab**：原脚本用 `trainer.logger=['swanlab','console']` 需 API key；已改为 `['console']`。
 - **`$lr` 未定义**：原 `train_multihopqa_tree_search.sh` 引用未定义的 `$lr`，已修复并暴露为 `LR` 环境变量。
 - **ray job submit**：已改为直接 `python3 -m verl.trainer.main_ppo_format_ts`（模块内部自行 `ray.init()`），

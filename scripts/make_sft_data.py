@@ -19,6 +19,7 @@ import pandas as pd
 import requests
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
+from tqdm import tqdm
 
 
 def make_prefix(question: str) -> str:
@@ -121,7 +122,7 @@ def main():
     ds = ds.shuffle(seed=args.seed).select(range(args.n_samples))
 
     rows = []
-    for example in ds:
+    for qi, example in enumerate(tqdm(ds, desc="teacher rollout", unit="q")):
         question = example["question"].strip()
         if not question.endswith("?"):
             question += "?"
@@ -144,6 +145,9 @@ def main():
             # search -> inject the information block (environment side).
             retrieved = batch_retrieve([content], args.retriever_url, args.topk)[0]
             context = context + action_block + f"\n\n<information>{retrieved.strip()}</information>\n\n"
+
+        if (qi + 1) % 50 == 0:
+            print(f"  [{qi + 1}/{args.n_samples}] {len(rows)} turn samples so far", flush=True)
 
     if not rows:
         raise RuntimeError("No valid SFT samples generated. Check teacher format and retriever.")

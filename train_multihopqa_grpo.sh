@@ -11,7 +11,7 @@ BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 export CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0}"
 export DATA_DIR="${DATA_DIR:-$BASE_DIR/data}"
-export BASE_MODEL="${BASE_MODEL:-$BASE_DIR/models/Qwen2.5-0.5B}"
+export BASE_MODEL="${BASE_MODEL:-$BASE_DIR/models/Qwen2.5-0.5B-Instruct}"
 export EXPERIMENT_NAME="${EXPERIMENT_NAME:-multihopqa-grpo-qwen2.5-0.5b}"
 export RETRIEVER_URL="${RETRIEVER_URL:-http://127.0.0.1:8000/retrieve}"
 

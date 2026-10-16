@@ -2,7 +2,7 @@
 # Tree-GRPO (tree search) multi-hop QA training — single-node, direct launch.
 #
 # Adapted from the original 8-GPU `ray job submit` version for a single 24GB GPU
-# and Qwen2.5-0.5B. Changes vs. the original:
+# and Qwen2.5-0.5B-Instruct. Changes vs. the original:
 #   * direct `python3 -m verl.trainer.main_ppo_format_ts` (the module calls ray.init()
 #     itself), so no `ray job submit` / running ray head is required
 #   * `trainer.logger` -> console only (drops the swanlab/cloud dependency)
@@ -19,7 +19,7 @@ BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 export CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0}"
 export DATA_DIR="${DATA_DIR:-$BASE_DIR/data}"
-export BASE_MODEL="${BASE_MODEL:-$BASE_DIR/models/Qwen2.5-0.5B}"
+export BASE_MODEL="${BASE_MODEL:-$BASE_DIR/models/Qwen2.5-0.5B-Instruct}"
 export EXPERIMENT_NAME="${EXPERIMENT_NAME:-multihopqa-treesearch-qwen2.5-0.5b}"
 export RETRIEVER_URL="${RETRIEVER_URL:-http://127.0.0.1:8000/retrieve}"
 
