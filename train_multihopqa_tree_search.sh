@@ -26,6 +26,9 @@ export RETRIEVER_URL="${RETRIEVER_URL:-http://127.0.0.1:8000/retrieve}"
 # RL learning rate for a 0.5B base model (the original script referenced an undefined `$lr`).
 lr="${LR:-1e-5}"
 total_training_steps="${TOTAL_TRAINING_STEPS:-180}"
+# Number of validation examples to evaluate (null = full test set). Set VAL_DATA_NUM=8
+# for a fast smoke test so the final validation only runs a single batch.
+val_data_num="${VAL_DATA_NUM:-null}"
 
 export WG_BACKEND="${WG_BACKEND:-ray}"
 # flash-attn is the dependency actually installed by the upstream README (xformers is not);
@@ -60,7 +63,7 @@ python3 -m verl.trainer.main_ppo_format_ts \
     data.train_files="$DATA_DIR/train.parquet" \
     data.val_files="$DATA_DIR/test.parquet" \
     data.train_data_num=null \
-    data.val_data_num=null \
+    data.val_data_num=$val_data_num \
     data.train_batch_size=$train_batch_size \
     data.val_batch_size=$val_batch_size \
     data.max_prompt_length=4096 \
