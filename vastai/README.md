@@ -41,7 +41,7 @@ bash setup/install.sh        # 装 miniforge + treegrpo/retriever 两个 conda �
 > - 脚本有完成标记（`~/.cache/treegrpo-install/`），中途失败重跑会跳过已装好的环境；
 >   想彻底重装用 `FORCE=1 bash setup/install.sh`。
 > - 依赖版本都写死在脚本里，和镜像方案一致：treegrpo = py3.12.9 / torch 2.6.0 / vllm 0.8.5.post1 /
->   transformers 4.53.2 / flash-attn；retriever = py3.10.13 / torch 2.6.0 / faiss-gpu-cu12 1.7.3 / uvicorn / fastapi。
+>   transformers 4.53.2 / flash-attn；retriever = py3.10.13 / torch 2.6.0 / faiss-gpu-cu12 1.10.0 / uvicorn / fastapi。
 
 ## 3. 跑通完整流程
 
@@ -142,8 +142,8 @@ TOTAL_TRAINING_STEPS=2 bash run_tree.sh
 - **`$lr` 未定义**：原 `train_multihopqa_tree_search.sh` 引用未定义的 `$lr`，已修复并暴露为 `LR` 环境变量。
 - **ray job submit**：已改为直接 `python3 -m verl.trainer.main_ppo_format_ts`（模块内部自行 `ray.init()`），
   无需先起 ray head。
-- **faiss-gpu**：PyPI 上 `faiss-gpu` 到 1.7.2 为止；改装 `faiss-gpu-cu12==1.7.3`（`import faiss` 不变）。
-  若在别处安装失败，可退回 `conda install -c conda-forge faiss-gpu=1.7.3`。
+- **faiss-gpu**：PyPI 上 `faiss-gpu-cu12` 的 1.7.x 已下架，现在从 1.8.x 起；改装 `faiss-gpu-cu12==1.10.0`（`import faiss` 不变）。
+  若在别处安装失败，可退回 `conda install -c conda-forge faiss-gpu`（不指定版本，取最新）。
 - **检索服务器没起来**：先确认 `retrieval/e5_Flat.index`、`retrieval/wiki-18.jsonl`、`models/e5-base-v2`
   三者存在（`setup/download_data.sh` 的产出）。`curl -s -X POST http://127.0.0.1:8000/retrieve -H 'Content-Type: application/json' -d '{"queries":["test"],"topk":1}'` 应返回 JSON。
 

@@ -43,9 +43,9 @@ RUN conda create -y -n retriever python=3.10.13 && \
     source "$MINIFORGE/etc/profile.d/conda.sh" && conda activate retriever && \
     pip install --upgrade pip && \
     pip install torch==2.6.0 torchvision==0.21.0 torchaudio==2.6.0 && \
-    # faiss-gpu 1.7.3 is not published on PyPI as `faiss-gpu`; use the CUDA 12 wheel.
+    # faiss-gpu 1.7.3 was yanked from PyPI; the CUDA 12 wheel now starts at 1.8.x.
     pip install "numpy<2" && \
-    pip install faiss-gpu-cu12==1.7.3 && \
+    pip install faiss-gpu-cu12==1.10.0 && \
     pip install transformers datasets pyserini && \
     pip install uvicorn fastapi
 

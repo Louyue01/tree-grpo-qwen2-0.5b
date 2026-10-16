@@ -75,13 +75,13 @@ if [ -f "$MARK_DIR/retriever.done" ] && [ "${FORCE:-0}" != "1" ]; then
     echo "==> [3/6] retriever env already done (FORCE=1 to rebuild)"
 else
     echo "==> [3/6] Creating retriever env (python 3.10.13) + faiss/e5/uvicorn"
-    conda create -y -n retriever python=3.10.13
+    [ -d "$MINIFORGE_DIR/envs/retriever" ] || conda create -y -n retriever python=3.10.13
     conda activate retriever
     pip install --upgrade pip
     pip install torch==${TORCH_VERSION} torchvision==0.21.0 torchaudio==${TORCH_VERSION}
-    # faiss-gpu 1.7.3 is not published on PyPI as `faiss-gpu`; use the CUDA 12 wheel + numpy<2.
+    # faiss-gpu 1.7.3 was yanked from PyPI; the CUDA 12 wheel now starts at 1.8.x. Pin a known-good build.
     pip install "numpy<2"
-    pip install faiss-gpu-cu12==1.7.3
+    pip install faiss-gpu-cu12==1.10.0
     pip install transformers datasets pyserini
     pip install uvicorn fastapi
     conda deactivate
@@ -93,7 +93,7 @@ if [ -f "$MARK_DIR/treegrpo.done" ] && [ "${FORCE:-0}" != "1" ]; then
     echo "==> [4/6] treegrpo env already done (FORCE=1 to rebuild)"
 else
     echo "==> [4/6] Creating treegrpo env (python 3.12.9) + vllm + flash-attn"
-    conda create -y -n treegrpo python=3.12.9
+    [ -d "$MINIFORGE_DIR/envs/treegrpo" ] || conda create -y -n treegrpo python=3.12.9
     conda activate treegrpo
     pip install --upgrade pip
     pip install torch==${TORCH_VERSION} torchvision==0.21.0 torchaudio==${TORCH_VERSION}
@@ -125,7 +125,7 @@ cat <<EOF
 
 ==================== install.sh complete ====================
 conda envs:  treegrpo  (python 3.12.9, torch ${TORCH_VERSION}, vllm ${VLLM_VERSION}, flash-attn)
-             retriever (python 3.10.13, torch ${TORCH_VERSION}, faiss-gpu-cu12 1.7.3, uvicorn/fastapi)
+             retriever (python 3.10.13, torch ${TORCH_VERSION}, faiss-gpu-cu12 1.10.0, uvicorn/fastapi)
 
 Open a NEW shell (so conda init takes effect), then:
   source "$CONDA_SH"
