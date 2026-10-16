@@ -50,8 +50,10 @@ def shrink_index(index_path, n, out_index):
 def shrink_corpus(corpus_path, n, out_corpus):
     print(f"truncating {corpus_path} to first {n} lines ...")
     written = 0
-    with open(corpus_path, "r", encoding="utf-8") as fin, \
-            open(out_corpus, "w", encoding="utf-8") as fout:
+    # Copy raw bytes (no decode/re-encode): the corpus may not be pure UTF-8, and
+    # we only need the first N lines verbatim so index row i == corpus line i.
+    with open(corpus_path, "rb") as fin, \
+            open(out_corpus, "wb") as fout:
         for i, line in enumerate(fin):
             if i >= n:
                 break
