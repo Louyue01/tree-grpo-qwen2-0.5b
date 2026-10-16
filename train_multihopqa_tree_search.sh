@@ -32,14 +32,17 @@ export WG_BACKEND="${WG_BACKEND:-ray}"
 # override to XFORMERS only if you also install xformers.
 export VLLM_ATTENTION_BACKEND="${VLLM_ATTENTION_BACKEND:-FLASH_ATTN}"
 export RAY_gsc_rpc_server_reconnect_timeout_s=100
+# Reclaim CUDA allocator fragmentation. The actor backward pass OOM'd with ~2.9 GiB
+# reserved-but-unallocated; expandable segments makes that memory usable again.
+export PYTORCH_CUDA_ALLOC_CONF="${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:True}"
 
 # ---- single-GPU batch sizes (tunable; scaled down from the original 8-GPU values) ----
 n_gpus_per_node=1
 train_batch_size=16          # prompts per training step
 val_batch_size=8
 actor_ppo_mini_batch_size=8
-actor_ppo_micro_batch_size=2
-log_prob_micro_batch_size=2
+actor_ppo_micro_batch_size=1
+log_prob_micro_batch_size=1
 
 # Tree search hyper-parameters: m initial chains, expand n non-leaf nodes for l levels,
 # then sample k leaves per tree.

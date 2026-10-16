@@ -27,8 +27,8 @@ if [ "${AUTO_ACTIVATE:-0}" = "1" ]; then
     conda activate "$RETRIEVER_ENV"
 fi
 
-INDEX_FILE="$INDEX_DIR/e5_Flat.index"
-CORPUS_FILE="$INDEX_DIR/wiki-18.jsonl"
+INDEX_FILE="${INDEX_FILE:-$INDEX_DIR/e5_Flat.index}"
+CORPUS_FILE="${CORPUS_FILE:-$INDEX_DIR/wiki-18.jsonl}"
 RETRIEVER_MODEL="$MODEL_DIR/e5-base-v2"
 
 for f in "$INDEX_FILE" "$CORPUS_FILE" "$RETRIEVER_MODEL"; do
