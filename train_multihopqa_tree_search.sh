@@ -106,7 +106,7 @@ python3 -m verl.trainer.main_ppo_format_ts \
     actor_rollout_ref.rollout.n_agent=1 \
     actor_rollout_ref.rollout.temperature=1 \
     actor_rollout_ref.actor.state_masking=true \
-    trainer.logger="['console']" \
+    trainer.logger="['console','wandb']" \
     +trainer.val_only=false \
     +trainer.val_before_train=false \
     trainer.default_hdfs_dir=null \
