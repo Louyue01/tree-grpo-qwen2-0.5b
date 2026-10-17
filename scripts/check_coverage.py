@@ -3,7 +3,7 @@
 
 For each multi-hop QA benchmark (HotpotQA / 2WikiMultiHopQA / MuSiQue / Bamboogle),
 load its FlashRAG test/dev split (the same split that produced test.parquet), pull
-the Wikipedia titles of its gold passages, and report what fraction of those titles
+the Wikipedia titles of its gold evidence, and report what fraction of those titles
 exist in the retrieval corpus (wiki-18-2M.jsonl).
 
 A title missing from the corpus means that evidence is unreachable no matter how good
@@ -27,16 +27,17 @@ def norm(s):
     return " ".join(str(s).lower().replace("_", " ").split())
 
 
-def detect_title_key(obj):
-    for cand in ("title", "id", "contents"):
-        if cand in obj:
-            return cand
-    return None
+def extract_corpus_title(contents):
+    """wiki-18 'contents' looks like '"Title"\nTitle text ...'; title = first line, quoted."""
+    if not isinstance(contents, str):
+        return None
+    first = contents.split("\n", 1)[0].strip()
+    first = first.strip().strip('"').strip()
+    return first or None
 
 
 def load_corpus_titles(path):
     titles = set()
-    title_key = None
     samples = []
     n = 0
     with open(path, "r", encoding="utf-8", errors="ignore") as f:
@@ -48,16 +49,8 @@ def load_corpus_titles(path):
                 obj = json.loads(line)
             except json.JSONDecodeError:
                 continue
-            if title_key is None:
-                title_key = detect_title_key(obj)
-                if title_key is None:
-                    print("ERROR: no title/id/contents key; first line keys =",
-                          list(obj.keys()))
-                    sys.exit(1)
-                print(f"[corpus] title field = {title_key!r}  "
-                      f"(first line keys = {list(obj.keys())})")
-            t = obj.get(title_key)
-            if isinstance(t, str) and t.strip():
+            t = extract_corpus_title(obj.get("contents"))
+            if t:
                 titles.add(norm(t))
                 if len(samples) < 3:
                     samples.append(t)
@@ -69,18 +62,36 @@ def load_corpus_titles(path):
     return titles
 
 
-def golden_titles(example):
-    for field in ("golden_passages", "golden_articles", "golden_docs"):
-        gps = example.get(field)
-        if not gps:
-            continue
-        out = []
-        for gp in gps:
-            if isinstance(gp, dict) and gp.get("title"):
-                out.append(norm(gp["title"]))
-        if out:
-            return out
-    return []
+def gold_titles(example):
+    """Return (list_of_normalized_titles, method_used) from FlashRAG metadata."""
+    m = example.get("metadata")
+    if not isinstance(m, dict):
+        return [], "no-metadata"
+
+    # HotpotQA / 2WikiMultiHopQA: supporting_facts.title
+    sf = m.get("supporting_facts")
+    if isinstance(sf, dict) and isinstance(sf.get("title"), list):
+        ts = [t for t in sf["title"] if isinstance(t, str) and t.strip()]
+        if ts:
+            return [norm(t) for t in ts], "supporting_facts.title"
+
+    # MuSiQue: paragraphs with is_supporting=True
+    paras = m.get("paragraphs")
+    if isinstance(paras, list) and paras:
+        ts = [p["title"] for p in paras
+              if isinstance(p, dict) and p.get("title")
+              and p.get("is_supporting") is not False]
+        if ts:
+            return [norm(t) for t in ts], "paragraphs(is_supporting)"
+
+    # fallback: context.title (NOTE: includes distractors, so this OVER-counts coverage)
+    ctx = m.get("context")
+    if isinstance(ctx, dict) and isinstance(ctx.get("title"), list):
+        ts = [t for t in ctx["title"] if isinstance(t, str) and t.strip()]
+        if ts:
+            return [norm(t) for t in ts], "context.title(!!includes distractors)"
+
+    return [], "unknown(keys=%s)" % list(m.keys())
 
 
 def main():
@@ -93,7 +104,7 @@ def main():
     corpus_titles = load_corpus_titles(args.corpus_path)
     print()
 
-    print(f"{'benchmark':<16} {'n_q':>5} {'title_cov':>10} {'q_full':>7} {'q_any':>7}")
+    print(f"{'benchmark':<16} {'n_q':>5} {'title_cov':>10} {'q_full':>7} {'q_any':>7}   method")
     for bench in BENCHMARKS:
         try:
             ds = datasets.load_dataset(FLASHRAG_REPO, bench)
@@ -106,16 +117,19 @@ def main():
         if args.max_n and n_total > args.max_n:
             d = d.select(range(args.max_n))
 
-        if bench == BENCHMARKS[0]:
-            print(f"[{bench}] example keys = {list(d[0].keys())}")
-
         n_q = title_hit = title_total = 0
         q_full = q_any = 0
+        method = None
         gold_samples = []
         for ex in d:
-            ts = golden_titles(ex)
+            ts, meth = gold_titles(ex)
             if not ts:
+                if method is None and meth.startswith("unknown"):
+                    method = meth
                 continue
+            if method is None:
+                method = meth
+                gold_samples = ts[:3]
             n_q += 1
             in_corpus = [t in corpus_titles for t in ts]
             title_hit += sum(in_corpus)
@@ -124,15 +138,13 @@ def main():
                 q_full += 1
             if any(in_corpus):
                 q_any += 1
-            if not gold_samples:
-                gold_samples = ts[:3]
 
         if n_q == 0:
-            print(f"[{bench}] split={split} n={n_total} -> no gold titles found")
+            print(f"[{bench}] split={split} n={n_total} -> no titles ({method})")
             continue
 
         print(f"{bench:<16} {n_q:>5} {title_hit / title_total:>9.1%} "
-              f"{q_full / n_q:>6.1%} {q_any / n_q:>6.1%}")
+              f"{q_full / n_q:>6.1%} {q_any / n_q:>6.1%}   {method}")
         print(f"           (split={split}, total={n_total}, "
               f"sample gold titles={gold_samples})")
 
