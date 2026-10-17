@@ -49,14 +49,27 @@ from verl.third_party.vllm import vllm_version
 def _pre_process_inputs(pad_token_id, prompt_token_ids: torch.Tensor) -> List[int]:
     # remove the left padding in the prompt token_id
     # pad_token_id = self.llm_engine.tokenizer.pad_token_id if self.llm_engine.tokenizer.pad_token_id is not None else self.llm_engine.tokenizer.eos_token_id
+    if prompt_token_ids.dim() != 1:
+        # Tree-search can occasionally hand us a degenerate state (all-pad, a
+        # scalar, or a 2D+ row when input_ids got an unexpected dim). vLLM's
+        # parse_and_batch_prompt rejects anything that isn't a flat List[int],
+        # so normalize to 1D and log the real shape for diagnosis.
+        print(f"[WARN] _pre_process_inputs: expected 1D prompt but got "
+              f"{prompt_token_ids.dim()}D shape={tuple(prompt_token_ids.shape)} "
+              f"dtype={prompt_token_ids.dtype}; reshaping")
+        prompt_token_ids = prompt_token_ids.reshape(-1)
+
+    prompt_token_ids = prompt_token_ids.long()
     non_pad_index = torch.nonzero(prompt_token_ids != pad_token_id, as_tuple=False)
     if non_pad_index.numel() == 0:
         # Degenerate prompt: the tree-search state was truncated to all padding.
         # vLLM rejects empty prompt_token_ids, so keep a single pad token and let
         # this sample earn a low reward instead of crashing the whole run.
-        return [pad_token_id]
+        return [int(pad_token_id)]
     start = non_pad_index[0][0].item()
     token_ids = prompt_token_ids[start:].tolist()
+    if not token_ids:
+        token_ids = [int(pad_token_id)]
     return token_ids
 
 
