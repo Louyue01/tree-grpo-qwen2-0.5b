@@ -24,11 +24,12 @@ export EXPERIMENT_NAME="${EXPERIMENT_NAME:-multihopqa-treesearch-qwen2.5-0.5b}"
 export RETRIEVER_URL="${RETRIEVER_URL:-http://127.0.0.1:8000/retrieve}"
 
 # RL learning rate for a 0.5B base model (the original script referenced an undefined `$lr`).
-lr="${LR:-1e-5}"
-total_training_steps="${TOTAL_TRAINING_STEPS:-180}"
+# Lowered from 1e-5 -> 3e-6 (re-run): slower drift, less KL divergence on the sparse EM reward.
+lr="${LR:-3e-6}"
+total_training_steps="${TOTAL_TRAINING_STEPS:-160}"
 # Number of validation examples to evaluate (null = full test set). Set VAL_DATA_NUM=8
 # for a fast smoke test so the final validation only runs a single batch.
-val_data_num="${VAL_DATA_NUM:-null}"
+val_data_num="${VAL_DATA_NUM:-100}"
 
 export WG_BACKEND="${WG_BACKEND:-ray}"
 # flash-attn is the dependency actually installed by the upstream README (xformers is not);
@@ -99,7 +100,7 @@ python3 -m verl.trainer.main_ppo_format_ts \
     +actor_rollout_ref.rollout.enable_chunked_prefill=true \
     actor_rollout_ref.ref.log_prob_micro_batch_size=$log_prob_micro_batch_size \
     actor_rollout_ref.ref.fsdp_config.param_offload=True \
-    actor_rollout_ref.actor.kl_loss_coef=0.001 \
+    actor_rollout_ref.actor.kl_loss_coef=0.02 \
     actor_rollout_ref.actor.kl_loss_type=low_var_kl \
     algorithm.no_think_rl=false \
     algorithm.use_kl_in_reward=false \
@@ -108,12 +109,12 @@ python3 -m verl.trainer.main_ppo_format_ts \
     actor_rollout_ref.actor.state_masking=true \
     trainer.logger="['console','wandb']" \
     +trainer.val_only=false \
-    +trainer.val_before_train=false \
+    +trainer.val_before_train=true \
     trainer.default_hdfs_dir=null \
     trainer.n_gpus_per_node=$n_gpus_per_node \
     trainer.nnodes=1 \
-    trainer.save_freq=60 \
-    trainer.test_freq=60 \
+    trainer.save_freq=40 \
+    trainer.test_freq=40 \
     trainer.project_name="Tree-GRPO" \
     trainer.experiment_name=$EXPERIMENT_NAME \
     trainer.total_epochs=2 \
