@@ -49,8 +49,14 @@ from verl.third_party.vllm import vllm_version
 def _pre_process_inputs(pad_token_id, prompt_token_ids: torch.Tensor) -> List[int]:
     # remove the left padding in the prompt token_id
     # pad_token_id = self.llm_engine.tokenizer.pad_token_id if self.llm_engine.tokenizer.pad_token_id is not None else self.llm_engine.tokenizer.eos_token_id
-    non_pad_index = torch.nonzero(prompt_token_ids != pad_token_id, as_tuple=False)[0][0]
-    token_ids = prompt_token_ids[non_pad_index:].tolist()
+    non_pad_index = torch.nonzero(prompt_token_ids != pad_token_id, as_tuple=False)
+    if non_pad_index.numel() == 0:
+        # Degenerate prompt: the tree-search state was truncated to all padding.
+        # vLLM rejects empty prompt_token_ids, so keep a single pad token and let
+        # this sample earn a low reward instead of crashing the whole run.
+        return [pad_token_id]
+    start = non_pad_index[0][0].item()
+    token_ids = prompt_token_ids[start:].tolist()
     return token_ids
 
 
